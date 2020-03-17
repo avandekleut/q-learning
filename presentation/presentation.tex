@@ -84,6 +84,21 @@
 \end{frame}
 
 \begin{frame}
+  \frametitle{Markov Decision Process}
+  \begin{itemize}
+    \item A \textbf{Markov decision process} (MDP) extends Markov reward processes to make state transitions conditional on some action $a_t$
+    \item Formally a tuple $\langle \mathcal{S}, \mathcal{P}, \mathcal{R}, \mathcal{A} \rangle$
+    \item $\mathcal{A}$ is a set of actions available to the agent
+    \item State transitions are now $$\mathcal{P}(s_t, a_t, s_{t+1}) = \mathbb{P} \left[ s_{t+1} \vert s_t, a_t \right]$$
+    \item The probability of transitioning from state $s_t$ to state $s_{t+1}$ after choosing action $a_t$
+    \item Rewards are now
+    $$\mathcal{R}(s_t, a_t) = \mathbb{E} \left[ r_t \vert s_t, a_t \right]$$
+    \item The reward depends on the state you're in \textbf{and} the action you choose
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
   \frametitle{Value Function}
   \begin{itemize}
     \item We can use the expected value of $G_t$ to determine the \textbf{value} of being in a state $s_t$
@@ -93,456 +108,184 @@
           V(s_t) &= \mathbb{E} \left[ G_t \vert s_t \right] \\
            &= \mathbb{E} \left[ r_t + \gamma r_{t+1} + \gamma^2 r_{t+2} + \dots \vert s_t \right] \\
            &= \mathbb{E} \left[ r_t + \gamma( r_{t+1} + \gamma r_{t+2} + \dots ) \vert s_t \right] \\
-           &= \mathbb{E} \left[ r_t + G_{t+1} \vert s_t \right] \\
-          V(s_t) &= \mathbb{E} \left[ r_t + V(s_{t+1}) \vert s_t \right]
+           &= \mathbb{E} \left[ r_t + \gamma G_{t+1} \vert s_t \right] \\
+          V(s_t) &= \mathbb{E} \left[ r_t + \gamma V(s_{t+1}) \vert s_t \right]
         \end{align*}
           which is known as the \textbf{Bellman Equation}
   \end{itemize}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Action-Value Function}
+  \begin{itemize}
+    \item We can also use the expected value of $G_t$ to determine the \textbf{quality} of taking a certain action $a_t$ in a state $s_t$
+    \item $$Q(s_t, a_t) = \mathbb{E} \left[ G_t \vert s_t, a_t \right]$$
+    \item We can decompose $Q(s_t, a_t)$ the same way as $V(s_t)$ using the Bellman equation:
+    $$Q(s_t, a_t) = \mathbb{E} \left[ r_t + \gamma Q(s_{t+1}, a_{t+1}) \vert s_t, a_t \right]$$
+    \item Then we can see that $$V(s_t) = \mathbb{E}_{a_t} \left[ Q(s_t, a_t) \right]$$ the value of being in state $s_t$ is just the expected quality of being in state $s_t$ over all actions $a_t$
+  \end{itemize}
+\end{frame}
+
 \section{Q-Learning}
+\begin{frame}
+  \frametitle{Policies}
+  \begin{itemize}
+    \item We want to design an agent capable of maximizing the return in a Markov decision process
+    \item We therefore need a method of selecting actions $a_t$ at each timestep $t$
+    \item We call this the \textbf{policy} of the agent
+    \item Policies can be \textbf{deterministic}, so that the action taken is a function of the current state: $$\mu: \mathcal{S} \to \mathcal{A}$$ with $a_t = \mu(s_t)$
+    \item or can be \textbf{stochastic}, where the action is samples from a probability distriution: $$\pi: \mathcal{S} \times \mathcal{A} \to \left[ 0, 1 \right]$$ with $a_t \sim \pi(\cdot \vert s_t)$
+    \item In general we can refer to policies as $\pi$ since $\mu$ is a special case of a stochastic policy
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Policies}
+  \begin{itemize}
+    \item Given a policy $\pi$ we define
+    \item $$V^\pi (s_t) = \mathbb{E}_\pi \left[ G_t \vert s_t \right]$$
+    \item $$Q^\pi (s_t, a_t) = \mathbb{E}_\pi \left[ G_t \vert s_t, a_t \right]$$
+    \item Where the superscript $\pi$ in $V^\pi(s_t)$ and $Q^\pi(s_t, a_t)$ as well as the subscript $\pi$ in the expectations simply means ``assuming subsequent actions are chosen according to a policy $\pi$''
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Optimal Policy}
+  \begin{itemize}
+    \item What does it mean for an agent to have an \textbf{optimal policy} $\pi^*$?
+    \item If $Q^*$ is the best possible $Q$-value achievable by a policy $\pi$ then: $$Q^*(s_t, a_t) = \max_{\pi} \mathbb{E}_\pi \left[ G_t \vert s_t, a_t \right]$$
+    \item Then the optimal policy is just
+    $$\pi^* (a_t \vert s_t) = \begin{cases} 1 & a_t = \arg \max_{a_t} Q^*(a_t, s_t)\\ 0 & \text{otherwise} \end{cases}$$
+    i.e., choose the action which maximizes the optimal $Q$-value
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Learning Optimal Policies}
+  \begin{itemize}
+    \item In order to learn the optimal policy $\pi^*$ we need to learn $Q^\pi$, so we can choose the actions that maximize it
+    \item However, determining $Q^\pi$ exactly is often impossible in practice
+    \item How would you compute the expected value of being in a certain state at a certain time?
+    \item Reinforcement learning does not assume that you have access to the underlying MDP transition dynamics $\mathcal{P}$
+    \item Different approaches have been used to learn $Q^\pi$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{$Q$-Learning}
+  \begin{itemize}
+    \item One approach is to try to use \textbf{dynamic programming} to learn $Q^\pi$
+    \item Assumes that $\mathcal{A}$ and $\mathcal{S}$ are \textbf{finite}
+    \item Begin with an approximation $\widehat{Q}^\pi$ which is successively improved to approach $Q^\pi$ in the limit
+    \item Assume that $\mathcal{S}$ and $\mathcal{A}$ are finite
+    \item Then we can use dynamic programming to approximate $Q^\pi$
+    \item Create a table of size $\lvert \mathcal{S} \rvert \times \lvert \mathcal{A} \rvert$
+    \item Store estimates $\widehat{Q}^\pi(s_t, a_t)$ for each pair $(s_t, a_t)$ in the table
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{$Q$-Learning}
+  \begin{itemize}
+    \item Consider the following agent following a greedy policy $\pi$
+    \begin{enumerate}
+      \item You are in a state $s_t$
+      \item You choose an action $a_t$ which maximizes $\widehat{Q}^\pi(s_t, a_t)$ (greedy policy)
+      \item You get a reward $r_t$
+      \item You transition to the next state $s_{t+1}$
+    \end{enumerate}
+    \item At this point, you have a slightly better estimate for $Q^\pi(s_t, a_t)$ according to the Bellman equation, namely $$r_t + \gamma \max_{a_{t+1}} \widehat{Q}^\pi (s_{t+1}, a_{t+1})$$ (since we are following a greedy policy)
+    \item Update the table to be closer to the better estimate with some learning rate $\alpha$ $$\widehat{Q}^\pi(s_t, a_t) \gets (1 - \alpha) \widehat{Q}^\pi (s_t, a_t) + \alpha \left( r_t + \gamma \max_{a_{t+1}} \widehat{Q}^\pi (s_{t+1}, a_{t+1}) \right) $$
+  \end{itemize}
+\end{frame}
+
 \section{Deep Q-Learning}
 
+\begin{frame}
+  \frametitle{Deep $Q$-Learning}
+  \begin{itemize}
+    \item The issue with $Q$-learning is that it assumes that both $\mathcal{S}$ and $\mathcal{A}$ are finite
+    \item We can apply the methods of $Q$-learning to MDPs with infinite $\mathcal{S}$ by using function approximation
+    \item Instead of a table, $\widehat{Q}_{\theta}^\pi$ is a function approximator (such as a neural network) with parameters $\theta$
+    \item Given a state-action pair $(s_t, a_t)$ our function approximator makes a prediction $\widehat{Q}_{\theta}^\pi(s_t, a_t)$
+    \item We have a target $$y = r_t + \gamma \max_{a_{t+1}} \widehat{Q}_{\theta}^\pi (s_{t+1}, a_{t+1})$$
+    \item We want minimize the loss (e.g. via SGD)
+    $$L(\theta) = \left( \widehat{Q}_{\theta}^\pi(s_t, a_t) - y \right)^2$$
+  \end{itemize}
+\end{frame}
 
-%
-% \section{Foraging as Optimization}
-%
-% \begin{frame}
-% \frametitle{Foraging}
-% \begin{itemize}
-%   \item<1-> \textbf{Foraging}
-%   \begin{itemize}
-%     \item<1-> searching for nutrients
-%     \item<1-> avoiding noxious stimuli (toxins, predators, etc)
-%   \end{itemize}
-%   \item<2-> \textbf{Social Foraging}
-%   \begin{itemize}
-%     \item<2-> increases likelihood of finding nutrients
-%     \item<2-> better detection and protection from noxious stimuli
-%   \end{itemize}
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Foraging as Optimization}
-% \textbf{How can we view foraging as an Optimization Process?}
-% \begin{itemize}
-%   \item<1-> We have some parameters $\theta$ and a loss function $J(\theta)$ that we want to minimize
-%   \item<2-> $\theta$ can represent the position of an organism in its environment
-%   \item<3-> $J$ can represent the concentration of nutrients and noxious stimuli
-%   \begin{itemize}
-%     \item<3-> lower values of $J$ = more nutrients, less noxious stimuli
-%     \item<3-> higher values of $J$ = more noxious stimuli, less nutrients
-%   \end{itemize}
-%   \item<4-> Minimizing $J$ = finding best $\theta$ = foraging behaviour
-% \end{itemize}
-% \end{frame}
-%
-% \section{Building the Algorithm}
-% \begin{frame}
-% \frametitle{\textit{E. coli} as a model organism}
-% \begin{itemize}
-%   \item<1-> Want foraging algorithm to be grounded in biology
-%   \item<2-> Chose \textit{E. coli} to base algorithm on
-%   \begin{itemize}
-%     \item<2-> Highly studied
-%     \item<2-> Well-characterized foraging behaviour
-%   \end{itemize}
-%   \item<3-> Social organism
-%   \begin{itemize}
-%     \item<3-> Secretes signals to attract others nearby
-%     \item<3-> Encourages ``swarming'' or ``clumping''
-%   \end{itemize}
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{\textit{E. coli} Locomotion}
-% \begin{itemize}
-%   \item<1-> Swims using left-handed helical flagella (``propellers'')
-%   \begin{itemize}
-%     \item<2-> \textbf{Tumble}: flagella all rotate clockwise $\to$ pull on cell in all directions $\to$ random movement
-%     \item<3-> \textbf{Run}: flagella all rotate counterclockwise $\to$ flagella form a bundle $\to$ push on cell in one direction $\to$ directed movement
-%   \end{itemize}
-% \end{itemize}
-% \begin{center}
-% \includegraphics<1->[scale=0.2]{assets/ecoli}
-% \end{center}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{\textit{E. coli} Foraging}
-% \begin{itemize}
-%   \item<1-> If during a tumble \textit{E. coli} swims down a nutrient concentration gradient:
-%   \begin{itemize}
-%     \item<1-> Increases probability of entering a run
-%     \item<1-> Continues moving down concentration gradient towards even more nutrients
-%   \end{itemize}
-%   \item<2-> Otherwise:
-%   \begin{itemize}
-%     \item<2-> Continues tumble
-%     \item<2-> Moves randomly to search for nutrient gradients to exploit
-%   \end{itemize}
-%   \item<3-> Call a tumble followed by a run a ``chemotaxis step''
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Algorithm for a Single Bacterium}
-% \begin{algorithmic}[1]
-% \For {$j \gets 1 \dots N_c $}:
-%   \State $J_\text{last} \gets J(\theta)$
-%   \State $\phi \sim S^p$
-%   \State $\theta \gets \theta + c \phi$
-%   \While {$J(\theta) < J_\text{last}$}:
-%     \State $J_\text{last} \gets J(\theta)$
-%     \State $\theta \gets \theta + c \phi$
-%   \EndWhile
-% \EndFor
-% \end{algorithmic}
-% \begin{itemize}
-%   \item $\theta$: $p$-dimensional vector (randomly initialized)
-%   \item $N_c$: number of chemotaxis steps
-%   \item $\phi \sim S^p$: a random $p$-dimensional unit vector
-%   \item $c$: a step-size
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Loss Function to Optimize}
-% \begin{center}
-% \includegraphics[scale=0.5]{assets/rastrigin}
-% $$J(\theta) = An + \sum_{i=1}^n \left( x_i^2 - A \cos(2 \pi x_i) \right)$$
-% \end{center}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Results of Single Bacterium}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.35]{assets/rastrigin_J}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.35]{assets/rastrigin_theta}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{$J_{cc}$ and swarming behaviour}
-% \begin{itemize}
-%   \item<1-> \textit{E. coli} do social foraging
-%   \item<2-> Secrete a substance to indicate to attract nearby \textit{E. coli} and encourage swarming
-%   \item<3-> Also want to avoid crowding
-%   \item<4-> Add an auxiliary loss function $J_{cc}(\theta)$ to loss function to encourage swarming
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{$J_{cc}$ and swarming behaviour}
-% \begin{center}
-% \includegraphics[scale=0.35]{assets/swarming}
-% \begin{align*}
-% J_{cc}(\theta) = \sum_{i=1}^S &-d_\text{attract} \exp \left( -w_\text{attract} (\theta - \theta_i)^T (\theta - \theta_i) \right) \\ &+ h_\text{repellant} \exp \left( -w_\text{repellant} (\theta - \theta_i)^T (\theta - \theta_i) \right)
-% \end{align*}
-% \end{center}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Algorithm for a Colony}
-% \begin{algorithmic}[1]
-% \For {\textcolor{gray}{$j \gets 1 \dots N_c $}}:
-%   \For {$i \gets 1 \dots S$}:
-%     \State \textcolor{gray}{$J_\text{last} \gets J(\theta_i) $} $+ J_{cc}(\theta_i)$
-%     \State \textcolor{gray}{$\phi \sim S^p$}
-%     \State \textcolor{gray}{$\theta_i \gets \theta_i + c_i \phi$}
-%     \While {\textcolor{gray}{$J(\theta_i)$} $+ J_{cc}(\theta_i)$ \textcolor{gray}{$< J_\text{last} $}}:
-%       \State \textcolor{gray}{$J_\text{last} \gets J(\theta_i)$}
-%       \State \textcolor{gray}{$\theta_i \gets \theta_i + c_i \phi$}
-%     \EndWhile
-%   \EndFor
-% \EndFor
-% \end{algorithmic}
-% \begin{itemize}
-%   \item $S$: number of bacteria in the colony
-%   \item $J_{cc}$: cell-to-cell interactions
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Results of Colony with Swarming}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.35]{assets/rastrigin_colony_J}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.35]{assets/rastrigin_colony_theta}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Results of Colony with Swarming}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.35]{assets/rastrigin_colony_tuned_J}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.35]{assets/rastrigin_colony_tuned_theta}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Comparing $J_{cc}$}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.35]{assets/swarming}
-%   \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.35]{assets/swarming_tuned}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{\textit{E. coli} reproduction}
-% \begin{itemize}
-%   \item<1-> \textit{E. coli} ``reproduce'' via binary fission, which essentially produces a clone
-%   \item<2-> Individuals with higher values of $J$ killed off
-%   \item<3-> Individuals with lower values of $J$ duplicated
-%   \item<4-> Idea is to encourage searching in space nearby ``best'' individuals
-%   \item<5-> \alert{If repellance isn't high enough then repeated iterations of evolution can concentrate colony in local minimum}
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Algorithm for a Reproducing Colony}
-% \begin{algorithmic}[1]
-% \For {$k \gets 1 \dots N_{re}$}:
-%   \For {\textcolor{gray}{$j \gets 1 \dots N_c $}}:
-%     \For {\textcolor{gray}{$i \gets 1 \dots S$}}:
-%       \State \textcolor{gray}{$J_\text{last} \gets J(\theta_i) + J_{cc}(\theta_i)$}
-%       \State \textcolor{gray}{$\phi \sim S^p$}
-%       \State \textcolor{gray}{$\theta_i \gets \theta_i + c_i \phi$}
-%       \While {\textcolor{gray}{$J(\theta_i) + J_{cc}(\theta_i) < J_\text{last} $}}:
-%         \State \textcolor{gray}{$J_\text{last} \gets J(\theta_i)$}
-%         \State \textcolor{gray}{$\theta_i \gets \theta_i + c_i \phi$}
-%       \EndWhile
-%     \EndFor
-%   \EndFor
-%   \State delete worst $S/2$ and reproduce best $S/2$
-% \EndFor
-% \end{algorithmic}
-% \begin{itemize}
-%   \item $N_{re}$: number of reproduction steps
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Results of Reproducing Colony}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.35]{assets/rastrigin_colony_re_J}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.35]{assets/rastrigin_colony_re_theta}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Does Reproduction Help?}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.3]{assets/rastrigin_colony_re_J}
-%       \includegraphics[scale=0.3]{assets/rastrigin_colony_re_theta}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.3]{assets/rastrigin_colony_400_J}
-%     \includegraphics[scale=0.3]{assets/rastrigin_colony_400_theta}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Elimination-Dispersal Events}
-% \begin{columns}[T]
-% \column{0.5\textwidth}
-% \begin{center}
-% \includegraphics[scale=0.25]{assets/transmission.jpg}
-% \end{center}
-% \column{0.5\textwidth}
-% \begin{itemize}
-%   \item<1-> Over time, random events disperse populations of \textit{E. coli}
-%
-%   \item<2-> May destroy chemotactic progress
-%   \begin{itemize}
-%     \item<2-> But may also bring \textit{E. coli} to good food sources
-%   \end{itemize}
-%   \item<3-> For optimization, this is a method to prevent stagnation and move out from local minima
-% \end{itemize}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Algorithm for a Dispersing Colony}
-% \begin{algorithmic}[1]
-% \For {$l \gets 1 \dots N_{ed}$}:
-%   \For {\textcolor{gray}{$k \gets 1 \dots N_{re}$}}:
-%     \For {\textcolor{gray}{$j \gets 1 \dots N_c $}}:
-%       \For {\textcolor{gray}{$i \gets 1 \dots S$}}:
-%         \State \textcolor{gray}{$J_\text{last} \gets J(\theta_i) + J_{cc}(\theta_i)$}
-%         \State \textcolor{gray}{$\phi \sim S^p$}
-%         \State \textcolor{gray}{$\theta_i \gets \theta_i + c_i \phi$}
-%         \While {\textcolor{gray}{$J(\theta_i) + J_{cc}(\theta_i) < J_\text{last} $}}:
-%           \State \textcolor{gray}{$J_\text{last} \gets J(\theta_i)$}
-%           \State \textcolor{gray}{$\theta_i \gets \theta_i + c_i \phi$}
-%         \EndWhile
-%       \EndFor
-%     \EndFor
-%     \State \textcolor{gray}{delete worst $S/2$ and reproduce best $S/2$}
-%   \EndFor
-%   \For {$i \gets 1 \dots S$}:
-%     \If {$\epsilon \sim \mathcal{U}(0, 1) < p_{ed}$}:
-%       \State $\theta_i \sim d^0(\theta)$
-%     \EndIf
-%   \EndFor
-% \EndFor
-% \end{algorithmic}
-% \begin{itemize}
-%   \item $N_{ed}$: number of elimination-dispersal events
-%   \item $p_{ed}$: probabilty of a single elimination-dispersal event
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Results of Elimination-Dispersal}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.3]{assets/rastrigin_colony_ed_0_J}
-%       \includegraphics[scale=0.3]{assets/rastrigin_colony_ed_1_J}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.3]{assets/rastrigin_colony_ed_2_J}
-%     \includegraphics[scale=0.3]{assets/rastrigin_colony_ed_3_J}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Implementation}
-% \begin{center}
-% \includegraphics[scale=0.25]{assets/code}
-% \href{github.com/avandekleut/bacterial-foraging}{https://github.com/avandekleut/bacterial-foraging/}
-% \end{center}
-% \end{frame}
-%
-% \section{Discussion}
-%
-% \begin{frame}
-% \frametitle{Is this a good optimization algorithm?}
-% \begin{itemize}
-%   \item<2-> We don't know. The author doesn't compare to any existing methods.
-%   \item<3-> The author draws a comparison to genetic algorithms (GAs) since both are hill-climbing algorithms, but asserts that they are really different algorithms \textbf{based on their biological inspiration}
-%   \item<4-> The method is also suspiciously similar to partical swarm optimization
-%   \begin{itemize}
-%     \item<5-> Combines local and global information with stochastic hill-climbing algorithm
-%     \item<5-> The author never mentions this despite the popularity of PSOs (this paper publish 7 years later)
-%     \item<6-> (Ask me about the comparison I did afterwards!)
-%   \end{itemize}
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Is this a good optimization algorithm?}
-% \begin{itemize}
-%   \item<1-> However, this algorithm is \textbf{gradient-free}
-%   \begin{itemize}
-%     \item<2-> We can minimize functions that we may not have access to the gradient for (or it may not exist)
-%     \item<2-> For example tuning hyperparameters
-%   \end{itemize}
-%   \item<3-> It can also explore the search space beyond the initial distribution $d^0(\theta)$ in case we do not know where the optimal value $\theta^*$ lies
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Is this a good model of \textit{E. coli}?}
-% \begin{itemize}
-%   \item<2-> We don't know. The author doesn't compare to any ecological data.
-%   \item<3-> Some important limitations from the author:
-%   \begin{itemize}
-%     \item<4-> Ignores biology in favour of chemotactic hill-climbing and swarming
-%     \item<5-> Assumes organisms do not modify the nutrient surface
-%     \item<6-> Assumes a constant population size
-%   \end{itemize}
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Is this a good model of \textit{E. coli}?}
-% \begin{center}
-% \includegraphics<1->[scale=0.3]{assets/yikes}
-% \end{center}
-% \begin{itemize}
-%   \item<2-> It is not clear if the goal is create a simulation of \textit{E. coli} foraging behaviour or to create another biologically-inspired optimization algorithm
-%   \item<3-> Unfortunately, it does not do either very well
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Methods compared}
-% \begin{center}
-% \includegraphics[scale=0.5]{assets/compared}
-% \end{center}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Comparison to PSO}
-% \begin{itemize}
-%   \item Bacterial foraging method:
-%   \begin{itemize}
-%     \item   At least $N_{ed} \times N_{re} \times S \times N_c$ values of $\theta$ seen
-%   \end{itemize}
-%   \item PSO: $N \times \text{iter}$ values of $\theta$ seen
-%   \begin{itemize}
-%     \item PSO strongest with large $N$, so presume $\text{iter} \equiv N_c$
-%     \item Then $N = N_{ed} \times N_{re} \times S$
-%   \end{itemize}
-% \end{itemize}
-% \end{frame}
-%
-% \begin{frame}
-% \frametitle{Comparison to PSO}
-% \begin{columns}[T]
-%   \column{0.5\textwidth}
-%     \begin{center}
-%       \includegraphics[scale=0.3]{assets/pso_J}
-%       \includegraphics[scale=0.3]{assets/pso_theta}
-%     \end{center}
-%   \column{0.5\textwidth}
-%   \begin{center}
-%     \includegraphics[scale=0.3]{assets/rastrigin_colony_ed_0_J}
-%     \includegraphics[scale=0.3]{assets/rastrigin_colony_ed_0_theta}
-%   \end{center}
-% \end{columns}
-% \end{frame}
-%
+\begin{frame}
+  \frametitle{Target Networks}
+  \begin{itemize}
+    \item Generally in an MDP, two consecutive states $s_t$ and $s_{t+1}$ are similar
+    \item If our function approximator is differentiable (like a neural network), then:
+    \begin{itemize}
+      \item If for a state $s_t$ we update $\widehat{Q}_{\theta}^\pi(s_t, a_t)$ to be slightly higher, this will \textbf{also} make it so that $\widehat{Q}_{\theta}^\pi(s_{t+1}, a_{t+1})$ is higher, since $s_{t+1}$ tends to be ``nearby'' to $s_t$
+    \end{itemize}
+    \item This leads to instability in the training with runaway $Q$-values
+    \item To solve this, we use \textbf{two} function approximators with parameters $\theta$ and $\theta^-$
+    \item $\theta^-$ is a copy of $\theta$ that we only use to generate the target value $y$, and it only gets synchronized every $n_\theta$ updates.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Replay Buffer}
+  \begin{itemize}
+    \item If we update the parameters $\theta$ at each timestep, then we are only training on the most recent state-action pairs $(s_t, a_t)$
+    \item This can result in \textbf{catastrophic forgetting}, where we perform worse on state-action pairs that we saw a long time ago
+    \item To alleviate this, we can instead train each timestep on a \textbf{batch} of data stored in a \textbf{replay buffer} $\mathcal{D}$
+    \item Assuming a greedy policy, we need to store transitions $\langle s_t, a_t, r_t, s_{t+1} \rangle$
+    \item We can sample batches of transitions randomly from the replay buffer and train the function approximator on them
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Terminal States}
+  \begin{itemize}
+    \item Some states are \textbf{terminal states}, meaning that once you reach state $s_t$, every following state is equal to $S_t$ and the reward is $0$
+    \item In these cases, we can reset the agent to a new starting state and treat this as $s_{t+1}$
+    \item We can augment each transition with a \textbf{done} flag $d_t$ indicating whether or not we entered a terminal state
+    \item We can provide the agent with information about ``doneness'' when calculating the target:
+    $$y = r_t + (1-d_t) \gamma \max_{a_{t+1}} \widehat{Q}_{\theta}^\pi (s_{t+1}, a_{t+1})$$
+    where multiplying by $(1 - d_t)$ helps the agent learn that $G_t = r_t$ (there are no more rewards after this transition)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{$\epsilon$-Greedy Policies}
+  \begin{itemize}
+    \item When we first start out, our estimate for $Q^\pi$ is probably very wrong
+    \item It does not make sense to follow a greedy policy that chooses the maximal $\widehat{Q}_{\theta}^\pi$
+    \item Instead we can start by selecting actions randomly to get an idea of how good they are
+    \item Over time we can rely more and more on our greedy policy
+    \item We can use an $\epsilon$-greedy policy: Take a random action with some probability $\epsilon$, otherwise follow the policy $\pi$
+    \item One strategy is to linearly anneal $\epsilon$ from some value $\epsilon_i$ to $\epsilon_f$ over a number of iterations $n_\epsilon$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Deep $Q$-learning algorithm}
+  \begin{algorithmic}[1]
+    \State $\theta \gets \theta_0$
+    \State $s_t \gets s_0$
+    \State $\epsilon \gets \epsilon_i$
+    \For {$t \gets 0 \dots T$} :
+    \If {$t \mod n_\theta \equiv 0$}:
+      \State $\theta^- \gets \theta$
+    \EndIf
+      \State $a_t \sim \pi(\cdot \vert s_t)$ with $\epsilon$-greedy policy
+      \State $r_t \sim \mathcal{R}(s_t, a_t)$
+      \State $s_{t+1} \sim \mathcal{P}(s_t, a_t, \cdot)$
+      \State $d_t \gets $ terminal state flag
+      \State $\mathcal{D}$.push($\langle s_t, a_t, r_t, s_{t+1}, d_t \rangle$)
+      \State $B \gets $ batch of data from $\mathcal{D}$
+      \For {$s_k, a_k, r_k, s_{k+1}, d_k$ in $B$}:
+        \State $y \gets r_k + \gamma \max_{a_{k+1}} \widehat{Q}_{\theta^-}^\pi (s_{k+1}, a_{k+1})$
+        \State minimize $L(\theta) = \left( \widehat{Q}_{\theta}^\pi(s_k, a_k) - y \right) ^2$ with respect to $\theta$
+      \EndFor
+      \State Anneal $\epsilon$ towards $\epsilon_f$
+    \EndFor
+  \end{algorithmic}
+\end{frame}
+
 \end{document}
